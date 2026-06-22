@@ -1,0 +1,2 @@
+# Disaster Guardian
+Disaster Guardian AI — Multi-Hazard Early Warning System An Edge AI-powered real-time disaster monitoring system that detects earthquake and structural vibration anomalies using sensor fusion, providing instant multi-channel alerts through a live web dashboard, OLED display, LED indicators, and audible buzzer — built on Arduino UNO Q with a trained anomaly detection model running entirely at the edge.
