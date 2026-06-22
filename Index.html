@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Guardian – Earthquake Detection</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-mark" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="15" stroke="#e05c2a" stroke-width="1.5"/>
+                    <path d="M6 18 L10 14 L14 20 L18 10 L22 16 L26 13" stroke="#e05c2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="16" cy="16" r="3" fill="#e05c2a" opacity="0.25"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="site-title">Disaster Guardian</h1>
+                <p class="site-subtitle">Edge AI · Earthquake &amp; Vibration Monitor</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-pill" id="statusPill">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Connecting…</span>
+            </div>
+            <div class="uptime-badge" id="uptimeBadge">⏱ 00:00:00</div>
+        </div>
+    </header>
+
+    <!-- Alert Banner -->
+    <div class="alert-banner" id="alertBanner" style="display:none;">
+        <span class="alert-icon">⚠</span>
+        <span id="alertBannerText">Abnormal vibration detected!</span>
+        <button class="alert-dismiss" onclick="dismissAlert()">✕</button>
+    </div>
+
+    <!-- Error Banner -->
+    <div id="error-container" class="error-banner" style="display:none;">
+        Connection to board lost. Please check the connection.
+    </div>
+
+    <!-- Main Grid -->
+    <main class="main-grid">
+
+        <!-- LEFT: Waveform Panel -->
+        <section class="panel panel-waveform">
+            <div class="panel-header">
+                <div class="panel-title-row">
+                    <span class="panel-icon" aria-hidden="true">📡</span>
+                    <h2 class="panel-title">Live Seismic Waveform</h2>
+                    <span class="unit-badge">m/s²</span>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color" style="background:#4f8ef7"></div><span>X axis</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#f7a23e"></div><span>Y axis</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#e05c2a"></div><span>Z axis</span></div>
+                </div>
+            </div>
+
+            <div id="accelerometer-data-display" style="display:none;">
+                <canvas id="plot"></canvas>
+            </div>
+
+            <div id="no-accelerometer-data" class="no-data-placeholder">
+                <div class="no-data-icon">〰</div>
+                <p>Waiting for sensor data…</p>
+                <p class="no-data-sub">Ensure Arduino UNO Q is connected and sketch is running</p>
+            </div>
+
+            <!-- Live Axis Readout -->
+            <div class="axis-readout" id="axisReadout">
+                <div class="axis-card">
+                    <span class="axis-label x-label">X</span>
+                    <span class="axis-value" id="xVal">—</span>
+                </div>
+                <div class="axis-card">
+                    <span class="axis-label y-label">Y</span>
+                    <span class="axis-value" id="yVal">—</span>
+                </div>
+                <div class="axis-card">
+                    <span class="axis-label z-label">Z</span>
+                    <span class="axis-value" id="zVal">—</span>
+                </div>
+                <div class="axis-card mag-card">
+                    <span class="axis-label mag-label">|MAG|</span>
+                    <span class="axis-value" id="magVal">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN -->
+        <aside class="right-col">
+
+            <!-- Detection Status -->
+            <div class="panel panel-status">
+                <div class="panel-header">
+                    <span class="panel-icon" aria-hidden="true">🛡</span>
+                    <h2 class="panel-title">System Status</h2>
+                </div>
+                <div id="feedback-content-wrapper" class="status-display">
+                    <div class="status-safe">
+                        <div class="pulse-ring"></div>
+                        <div class="status-icon-wrap safe-icon">✓</div>
+                        <p class="status-label safe-label">SAFE</p>
+                        <p class="status-sub">No anomalies detected</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threshold Control -->
+            <div class="panel panel-threshold">
+                <div class="panel-header">
+                    <span class="panel-icon" aria-hidden="true">⚙</span>
+                    <h2 class="panel-title">Sensitivity Threshold</h2>
+                    <div class="info-wrap">
+                        <span class="info-btn" tabindex="0" aria-label="About threshold">?</span>
+                        <div class="popover">Anomaly score quantifies how far current vibration is from learned normal patterns. Scores <strong>above</strong> this threshold trigger an alert. Lower = more sensitive.</div>
+                    </div>
+                </div>
+                <div class="threshold-control">
+                    <div class="threshold-input-row">
+                        <label class="threshold-label" for="confidenceSlider">Detection threshold</label>
+                        <div class="threshold-num-wrap">
+                            <input type="number" id="confidenceInput" class="threshold-num-input" min="0" step="0.1" value="1.0">
+                            <button id="confidenceResetButton" class="reset-btn" title="Reset to default">↺</button>
+                        </div>
+                    </div>
+                    <div class="slider-row">
+                        <span class="slider-limit">0</span>
+                        <div class="slider-track-wrap">
+                            <div class="slider-fill" id="sliderProgress"></div>
+                            <div class="slider-thumb-label" id="confidenceValueDisplay">1.0</div>
+                            <input type="range" id="confidenceSlider" min="0" max="20" step="0.1" value="1.0">
+                        </div>
+                        <span class="slider-limit">20+</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Anomalies -->
+            <div class="panel panel-anomalies">
+                <div class="panel-header">
+                    <span class="panel-icon" aria-hidden="true">🚨</span>
+                    <h2 class="panel-title">Recent Alerts</h2>
+                    <span class="alert-count-badge" id="alertCountBadge" style="display:none">0</span>
+                </div>
+                <ul id="recentClassifications" class="anomaly-list"></ul>
+            </div>
+
+        </aside>
+    </main>
+
+    <script src="libs/socket.io.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
