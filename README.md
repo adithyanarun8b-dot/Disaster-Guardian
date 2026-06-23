@@ -5,8 +5,6 @@
 ![Platform](https://img.shields.io/badge/Platform-Arduino%20UNO%20Q-blue)
 ![AI](https://img.shields.io/badge/AI-Edge%20Anomaly%20Detection-orange)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
-![Competition](https://img.shields.io/badge/IEEE%20MYOSA%206.0-Sensors%20Council-blueviolet)
-
 ---
 
 ## 📖 Overview
